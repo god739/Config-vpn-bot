@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Console — V2Ray Relay</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0E14; --panel:#121722; --panel2:#161D2B; --line:#232B3A; --line2:#2C3547;
+    --text:#E7ECF5; --muted:#7C8798; --dim:#4B5468;
+    --good:#3FD68C; --warn:#F5C451; --bad:#F2545B; --accent:#5B8DEF;
+    --mono:'IBM Plex Mono',monospace; --sans:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; display:flex;}
+
+  /* ── left rail ── */
+  .rail{width:216px; flex-shrink:0; border-right:1px solid var(--line); background:var(--panel);
+        padding:20px 14px; position:sticky; top:0; height:100vh;}
+  .brand{font-family:var(--mono); font-size:13px; font-weight:600; color:var(--accent); margin-bottom:22px;
+         display:flex; align-items:center; gap:8px;}
+  .brand .dot{width:6px;height:6px;border-radius:50%;background:var(--good);
+              box-shadow:0 0 0 3px rgba(63,214,140,.15); animation:pulse 2.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+  .nav-item{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; font-size:13.5px;
+            color:var(--muted); cursor:pointer; margin-bottom:2px; font-weight:500;}
+  .nav-item:hover{background:var(--panel2); color:var(--text);}
+  .nav-item.active{background:var(--panel2); color:var(--text); box-shadow:inset 2px 0 0 var(--accent);}
+
+  /* ── main ── */
+  .main{flex:1; padding:28px 32px 60px; max-width:1180px;}
+  .pagehead{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:22px;}
+  .pagehead h1{font-size:22px; margin:0; letter-spacing:-0.01em;}
+  .pagehead .meta{color:var(--dim); font-family:var(--mono); font-size:12px; margin-top:4px;}
+
+  .grid{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:26px;}
+  @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr);}}
+  .card{background:linear-gradient(180deg,var(--panel2),var(--panel)); border:1px solid var(--line);
+        border-radius:11px; padding:16px 18px;}
+  .card .num{font-family:var(--mono); font-size:24px; font-weight:600;}
+  .card .lbl{color:var(--muted); font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; margin-top:4px;}
+  .card.good .num{color:var(--good);} .card.warn .num{color:var(--warn);}
+  .card.bad .num{color:var(--bad);} .card.accent .num{color:var(--accent);}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:20px;}
+  .panel h2{font-size:14px; margin:0 0 14px; color:var(--text); font-weight:700;
+            display:flex; align-items:center; justify-content:space-between;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{text-align:left; color:var(--dim); font-weight:600; font-size:11px; text-transform:uppercase;
+     letter-spacing:.04em; padding:8px 10px; border-bottom:1px solid var(--line);}
+  td{padding:9px 10px; border-bottom:1px solid var(--line); color:var(--text);}
+  tr:last-child td{border-bottom:none;}
+  .mono{font-family:var(--mono); font-size:12px;}
+  .pill{display:inline-block; padding:2px 9px; border-radius:99px; font-size:11px; font-weight:600;}
+  .pill.on{background:rgba(63,214,140,.12); color:var(--good);}
+  .pill.off{background:rgba(242,84,91,.12); color:var(--bad);}
+  .pill.vip{background:rgba(245,196,81,.12); color:var(--warn);}
+  .btn{background:var(--panel2); border:1px solid var(--line2); color:var(--text); border-radius:7px;
+       padding:6px 12px; font-size:12px; cursor:pointer; font-family:var(--sans); font-weight:600;}
+  .btn:hover{border-color:var(--accent);}
+  .btn.primary{background:var(--accent); color:#0B0E14; border:none;}
+  .btn.small{padding:4px 10px; font-size:11.5px;}
+  .toggle-wrap{display:flex; align-items:center; gap:10px;}
+  .switch{width:40px; height:22px; border-radius:99px; background:var(--line2); position:relative; cursor:pointer;
+          transition:background .15s;}
+  .switch.on{background:var(--good);}
+  .switch .knob{width:18px; height:18px; border-radius:50%; background:#fff; position:absolute; top:2px; left:2px;
+                transition:left .15s;}
+  .switch.on .knob{left:20px;}
+  .pagination{display:flex; gap:8px; margin-top:14px; align-items:center; justify-content:flex-end;}
+  .pagination .p{color:var(--dim); font-family:var(--mono); font-size:12px;}
+  input.search{background:var(--panel2); border:1px solid var(--line2); border-radius:8px; padding:8px 12px;
+               color:var(--text); font-size:13px; width:240px; font-family:var(--sans);}
+  .genlink{display:flex; gap:8px; margin-bottom:14px;}
+  .genlink input{flex:1;}
+  .sublinkout{font-family:var(--mono); font-size:12px; background:var(--panel2); border:1px solid var(--line);
+              border-radius:8px; padding:10px 12px; word-break:break-all; color:var(--accent); display:none;}
+  .empty{color:var(--dim); font-size:13px; padding:20px 0; text-align:center; font-family:var(--mono);}
+  .tab-content{display:none;} .tab-content.active{display:block;}
+  .reason-tag{font-size:10.5px; color:var(--dim); font-family:var(--mono);}
+</style>
+</head>
+<body>
+  <div class="rail">
+    <div class="brand"><span class="dot"></span> ADMIN CONSOLE</div>
+    <div class="nav-item active" data-tab="overview">📊 Overview</div>
+    <div class="nav-item" data-tab="sources">📡 Sources</div>
+    <div class="nav-item" data-tab="users">👥 Users</div>
+    <div class="nav-item" data-tab="archive">📦 Archive</div>
+    <div class="nav-item" data-tab="sublinks">🔗 Sub Links</div>
+    <div class="nav-item" data-tab="settings">⚙️ Settings</div>
+    <div class="nav-item" data-tab="logs">📋 Logs</div>
+  </div>
+
+  <div class="main">
+    <!-- OVERVIEW -->
+    <div class="tab-content active" id="tab-overview">
+      <div class="pagehead"><div><h1>Overview</h1><div class="meta">Live from bot_database.db — updates every 15s</div></div></div>
+      <div class="grid" id="ov-grid"></div>
+      <div class="panel">
+        <h2>Test result breakdown</h2>
+        <div class="grid" style="grid-template-columns:repeat(3,1fr);" id="ov-breakdown"></div>
+      </div>
+    </div>
+
+    <!-- SOURCES -->
+    <div class="tab-content" id="tab-sources">
+      <div class="pagehead"><div><h1>Sources</h1><div class="meta">All config sources the bot pulls from</div></div></div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>ID</th><th>URL</th><th>Status</th><th>Fails</th><th>Datacenter</th><th>Found via</th><th></th></tr></thead>
+          <tbody id="sources-body"></tbody>
+        </table>
+        <div class="pagination"><button class="btn small" onclick="changePage('sources',-1)">‹ Prev</button><span class="p" id="sources-p"></span><button class="btn small" onclick="changePage('sources',1)">Next ›</button></div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div class="tab-content" id="tab-users">
+      <div class="pagehead"><div><h1>Users</h1><div class="meta">Everyone who has used the bot</div></div></div>
+      <div class="panel">
+        <div style="margin-bottom:14px;"><input class="search" id="user-search" placeholder="Search by ID, username, or name…" onkeydown="if(event.key==='Enter')loadUsers(1)"></div>
+        <table>
+          <thead><tr><th>ID</th><th>Username</th><th>Name</th><th>VIP</th><th>Downloads</th><th>Last seen</th></tr></thead>
+          <tbody id="users-body"></tbody>
+        </table>
+        <div class="pagination"><button class="btn small" onclick="changePage('users',-1)">‹ Prev</button><span class="p" id="users-p"></span><button class="btn small" onclick="changePage('users',1)">Next ›</button></div>
+      </div>
+    </div>
+
+    <!-- ARCHIVE -->
+    <div class="tab-content" id="tab-archive">
+      <div class="pagehead"><div><h1>Archived configs</h1><div class="meta">Dropped for being invalid, low-quality, or duplicate — kept here instead of destroyed</div></div></div>
+      <div class="panel">
+        <h2>Download</h2>
+        <div class="genlink">
+          <input class="search" id="archive-n" type="number" min="1" placeholder="Amount to download (blank = all)" style="width:100%">
+          <button class="btn primary" onclick="downloadArchive()">Download .txt</button>
+        </div>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Config</th><th>Protocol</th><th>Reason</th><th>When</th></tr></thead>
+          <tbody id="archive-body"></tbody>
+        </table>
+        <div class="pagination"><button class="btn small" onclick="changePage('archive',-1)">‹ Prev</button><span class="p" id="archive-p"></span><button class="btn small" onclick="changePage('archive',1)">Next ›</button></div>
+      </div>
+    </div>
+
+    <!-- SUB LINKS -->
+    <div class="tab-content" id="tab-sublinks">
+      <div class="pagehead"><div><h1>Subscription links</h1><div class="meta">Generate a per-user link, or grab the full admin feed</div></div></div>
+      <div class="panel">
+        <h2>Generate a user's link</h2>
+        <div class="genlink"><input class="search" id="gen-uid" placeholder="Telegram user ID" style="width:100%"><button class="btn primary" onclick="genLink()">Generate</button></div>
+        <div class="sublinkout" id="gen-out"></div>
+      </div>
+      <div class="panel">
+        <h2>Admin full feed <span class="reason-tag">everything, unfiltered — for your own client</span></h2>
+        <div class="sublinkout" style="display:block;" id="admin-feed-link"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="tab-content" id="tab-settings">
+      <div class="pagehead"><div><h1>Settings</h1><div class="meta">Toggles that affect what users see in the bot</div></div></div>
+      <div class="panel">
+        <h2>🛰 "Ping-Tested Configs" button</h2>
+        <p style="color:var(--muted); font-size:13px; margin:0 0 14px;">Shows or hides the tested-configs button on every user's main menu — flip this off any time without redeploying.</p>
+        <div class="toggle-wrap">
+          <div class="switch" id="tested-switch" onclick="toggleTestedBtn()"><div class="knob"></div></div>
+          <span id="tested-switch-label" class="mono" style="font-size:13px;"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOGS -->
+    <div class="tab-content" id="tab-logs">
+      <div class="pagehead"><div><h1>System logs</h1><div class="meta">Last 100 entries</div></div></div>
+      <div class="panel"><table><thead><tr><th>Time</th><th>Level</th><th>Message</th></tr></thead><tbody id="logs-body"></tbody></table></div>
+    </div>
+  </div>
+
+<script>
+const TOKEN = "{{ token }}";
+const pages = {sources:1, users:1, archive:1};
+
+function api(path){
+  const sep = path.includes('?') ? '&' : '?';
+  return fetch(path + sep + 'token=' + encodeURIComponent(TOKEN)).then(r=>r.json());
+}
+function apiPost(path, body){
+  const sep = path.includes('?') ? '&' : '?';
+  return fetch(path + sep + 'token=' + encodeURIComponent(TOKEN), {
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body||{})
+  }).then(r=>r.json());
+}
+
+document.querySelectorAll('.nav-item').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-'+el.dataset.tab).classList.add('active');
+  });
+});
+
+function changePage(kind, delta){
+  pages[kind] = Math.max(1, pages[kind]+delta);
+  if(kind==='sources') loadSources();
+  if(kind==='users') loadUsers(pages.users);
+  if(kind==='archive') loadArchive();
+}
+
+async function loadOverview(){
+  const d = await api('/api/admin/overview');
+  document.getElementById('ov-grid').innerHTML = `
+    <div class="card accent"><div class="num">${d.live_total.toLocaleString()}</div><div class="lbl">Live configs</div></div>
+    <div class="card"><div class="num">${d.tested_total.toLocaleString()}</div><div class="lbl">Total tested</div></div>
+    <div class="card"><div class="num">${d.sources_enabled}/${d.sources_total}</div><div class="lbl">Sources enabled</div></div>
+    <div class="card"><div class="num">${d.users_total.toLocaleString()}</div><div class="lbl">Total users</div></div>
+    <div class="card warn"><div class="num">${d.vip_total}</div><div class="lbl">VIP users</div></div>
+    <div class="card bad"><div class="num">${d.banned_total}</div><div class="lbl">Banned users</div></div>
+    <div class="card"><div class="num">${d.archived_total.toLocaleString()}</div><div class="lbl">Archived configs</div></div>
+    <div class="card accent"><div class="num">${d.avg_ping_ms ?? '—'}${d.avg_ping_ms ? 'ms' : ''}</div><div class="lbl">Avg ping (live)</div></div>
+  `;
+  document.getElementById('ov-breakdown').innerHTML = `
+    <div class="card good"><div class="num">${d.good_total}</div><div class="lbl">🟢 Good (≤300ms)</div></div>
+    <div class="card warn"><div class="num">${d.ok_total}</div><div class="lbl">🟡 Acceptable</div></div>
+    <div class="card bad"><div class="num">${d.bad_total}</div><div class="lbl">🔴 Poor / dead</div></div>
+  `;
+}
+
+async function loadSources(){
+  const d = await api('/api/admin/sources?page='+pages.sources);
+  document.getElementById('sources-p').textContent = `Page ${d.page} / ${d.pages}`;
+  document.getElementById('sources-body').innerHTML = d.items.length ? d.items.map(s => `
+    <tr>
+      <td class="mono">${s.id}</td>
+      <td class="mono" style="max-width:360px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${s.url}">${s.url}</td>
+      <td><span class="pill ${s.enabled ? 'on' : 'off'}">${s.enabled ? 'ENABLED' : 'DISABLED'}</span></td>
+      <td class="mono">${s.fail_count}</td>
+      <td class="mono">${s.datacenter || '—'}</td>
+      <td class="mono">${s.found_via || '—'}</td>
+      <td><button class="btn small" onclick="toggleSource(${s.id}, this)">${s.enabled ? 'Disable' : 'Enable'}</button></td>
+    </tr>`).join('') : '<tr><td colspan="7" class="empty">No sources found</td></tr>';
+}
+async function toggleSource(id, btn){
+  btn.disabled = true;
+  const r = await apiPost(`/api/admin/sources/${id}/toggle`);
+  if(r.ok) loadSources(); else btn.disabled = false;
+}
+
+async function loadUsers(page){
+  pages.users = page || pages.users;
+  const search = document.getElementById('user-search').value.trim();
+  const d = await api(`/api/admin/users?page=${pages.users}&search=${encodeURIComponent(search)}`);
+  document.getElementById('users-p').textContent = `Page ${d.page} / ${d.pages}`;
+  document.getElementById('users-body').innerHTML = d.items.length ? d.items.map(u => `
+    <tr>
+      <td class="mono">${u.user_id}</td>
+      <td class="mono">${u.username ? '@'+u.username : '—'}</td>
+      <td>${u.first_name || '—'}</td>
+      <td>${u.is_vip ? '<span class="pill vip">VIP</span>' : '—'}</td>
+      <td class="mono">${u.total_downloads.toLocaleString()}</td>
+      <td class="mono">${(u.last_seen||'—').replace('T',' ').slice(0,16)}</td>
+    </tr>`).join('') : '<tr><td colspan="6" class="empty">No users found</td></tr>';
+}
+
+async function loadArchive(){
+  const d = await api('/api/admin/archived?page='+pages.archive);
+  document.getElementById('archive-p').textContent = `Page ${d.page} / ${d.pages}`;
+  document.getElementById('archive-body').innerHTML = d.items.length ? d.items.map(a => `
+    <tr>
+      <td class="mono" style="max-width:420px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${a.config}">${a.config}</td>
+      <td class="mono">${a.protocol}</td>
+      <td class="reason-tag">${a.reason}</td>
+      <td class="mono">${new Date(a.archived_at*1000).toLocaleString()}</td>
+    </tr>`).join('') : '<tr><td colspan="4" class="empty">Nothing archived yet</td></tr>';
+}
+
+async function loadLogs(){
+  const d = await api('/api/admin/logs');
+  document.getElementById('logs-body').innerHTML = d.items.length ? d.items.map(l => `
+    <tr><td class="mono">${(l.timestamp||'').replace('T',' ').slice(0,19)}</td>
+        <td><span class="pill ${l.level==='ERROR'?'off':'on'}">${l.level}</span></td>
+        <td style="max-width:600px;">${l.message}</td></tr>`).join('') : '<tr><td colspan="3" class="empty">No logs</td></tr>';
+}
+
+async function loadSettings(){
+  const d = await api('/api/admin/settings/tested_button');
+  const sw = document.getElementById('tested-switch');
+  sw.classList.toggle('on', d.enabled);
+  document.getElementById('tested-switch-label').textContent = d.enabled ? 'Visible to users' : 'Hidden from users';
+}
+async function toggleTestedBtn(){
+  const sw = document.getElementById('tested-switch');
+  const newVal = !sw.classList.contains('on');
+  const r = await apiPost('/api/admin/settings/tested_button', {enabled:newVal});
+  sw.classList.toggle('on', r.enabled);
+  document.getElementById('tested-switch-label').textContent = r.enabled ? 'Visible to users' : 'Hidden from users';
+}
+
+function downloadArchive(){
+  const n = document.getElementById('archive-n').value.trim();
+  const url = '/admin/archive/export?token=' + encodeURIComponent(TOKEN) + (n ? '&limit=' + encodeURIComponent(n) : '');
+  window.location.href = url;
+}
+
+async function genLink(){
+  const uid = document.getElementById('gen-uid').value.trim();
+  if(!uid) return;
+  const d = await api('/api/admin/gen_sub_link?user_id=' + encodeURIComponent(uid));
+  const out = document.getElementById('gen-out');
+  out.style.display = 'block';
+  out.textContent = d.ok ? d.url : ('Error: ' + d.error);
+}
+
+function initAdminFeedLink(){
+  document.getElementById('admin-feed-link').textContent =
+    window.location.origin + '/admin/sub/all?token=' + TOKEN;
+}
+
+loadOverview(); loadSources(); loadUsers(1); loadArchive(); loadLogs(); loadSettings(); initAdminFeedLink();
+setInterval(loadOverview, 15000);
+</script>
+</body>
+</html>
