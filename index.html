@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Node Status — V2Ray Config Relay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0E14; --panel:#121722; --panel2:#161D2B; --line:#232B3A;
+    --text:#E7ECF5; --muted:#7C8798; --dim:#4B5468;
+    --good:#3FD68C; --warn:#F5C451; --bad:#F2545B; --accent:#5B8DEF;
+    --mono:'IBM Plex Mono',monospace; --sans:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(91,141,239,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(63,214,140,0.06), transparent 55%),
+      var(--bg);
+    color:var(--text); font-family:var(--sans); min-height:100vh;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:64px 24px 80px;}
+  .eyebrow{
+    font-family:var(--mono); font-size:12px; letter-spacing:.14em; color:var(--accent);
+    text-transform:uppercase; display:flex; align-items:center; gap:8px;
+  }
+  .dot{width:7px; height:7px; border-radius:50%; background:var(--good); box-shadow:0 0 0 3px rgba(63,214,140,.15);
+       animation:pulse 2.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+  h1{
+    font-size:44px; line-height:1.08; margin:18px 0 8px; font-weight:800; letter-spacing:-0.02em;
+  }
+  .sub{color:var(--muted); font-size:16px; max-width:56ch; margin:0 0 40px; line-height:1.55;}
+
+  .grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:36px;}
+  @media(max-width:760px){.grid{grid-template-columns:repeat(2,1fr);}}
+  .card{
+    background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line); border-radius:12px; padding:20px;
+  }
+  .card .num{font-family:var(--mono); font-size:30px; font-weight:600; letter-spacing:-0.01em;}
+  .card .lbl{color:var(--muted); font-size:12.5px; margin-top:6px; text-transform:uppercase; letter-spacing:.06em;}
+  .card.good .num{color:var(--good);} .card.warn .num{color:var(--warn);} .card.accent .num{color:var(--accent);}
+
+  .section-title{
+    font-family:var(--mono); font-size:12px; text-transform:uppercase; letter-spacing:.12em;
+    color:var(--dim); margin:40px 0 14px; display:flex; align-items:center; gap:10px;
+  }
+  .section-title::after{content:""; flex:1; height:1px; background:var(--line);}
+
+  .bars{display:flex; flex-direction:column; gap:10px;}
+  .bar-row{display:grid; grid-template-columns:120px 1fr 60px; align-items:center; gap:12px;}
+  .bar-row .name{font-size:13.5px; color:var(--muted);}
+  .bar-track{height:8px; background:var(--panel2); border-radius:99px; overflow:hidden; border:1px solid var(--line);}
+  .bar-fill{height:100%; background:linear-gradient(90deg,var(--accent),#7FA8FF); border-radius:99px;}
+  .bar-row .count{font-family:var(--mono); font-size:12.5px; color:var(--dim); text-align:right;}
+
+  .foot{margin-top:56px; padding-top:22px; border-top:1px solid var(--line); color:var(--dim); font-size:12.5px; font-family:var(--mono);}
+  .foot a{color:var(--accent); text-decoration:none;}
+  .loading{color:var(--dim); font-family:var(--mono); font-size:13px;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="eyebrow"><span class="dot"></span> LIVE RELAY STATUS</div>
+    <h1>Config pool, tested in real time.</h1>
+    <p class="sub">Every entry below is ping-checked through a real Xray tunnel — not just parsed from a list. Numbers refresh as the pool is re-tested.</p>
+
+    <div class="grid" id="stat-grid">
+      <div class="card accent"><div class="num" id="s-live">—</div><div class="lbl">Live configs</div></div>
+      <div class="card good"><div class="num" id="s-good">—</div><div class="lbl">Under 300ms</div></div>
+      <div class="card"><div class="num" id="s-sources">—</div><div class="lbl">Active sources</div></div>
+      <div class="card"><div class="num" id="s-users">—</div><div class="lbl">Bot users</div></div>
+    </div>
+
+    <div class="section-title">By protocol</div>
+    <div class="bars" id="proto-bars"><div class="loading">loading…</div></div>
+
+    <div class="section-title">By country</div>
+    <div class="bars" id="country-bars"><div class="loading">loading…</div></div>
+
+    <div class="foot">Powered by the same Real Ping Tester the bot uses internally. No personal data is shown here.</div>
+  </div>
+
+<script>
+async function load(){
+  try{
+    const r = await fetch('/api/public/stats');
+    const d = await r.json();
+    document.getElementById('s-live').textContent = d.live_total.toLocaleString();
+    document.getElementById('s-good').textContent = d.good_total.toLocaleString();
+    document.getElementById('s-sources').textContent = d.active_sources.toLocaleString();
+    document.getElementById('s-users').textContent = d.total_users.toLocaleString();
+
+    const maxP = Math.max(1, ...d.by_protocol.map(x=>x.count));
+    document.getElementById('proto-bars').innerHTML = d.by_protocol.map(x => `
+      <div class="bar-row">
+        <div class="name">${x.protocol.toUpperCase()}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(x.count/maxP*100).toFixed(1)}%"></div></div>
+        <div class="count">${x.count.toLocaleString()}</div>
+      </div>`).join('') || '<div class="loading">no data yet</div>';
+
+    const maxC = Math.max(1, ...d.by_country.map(x=>x.count));
+    document.getElementById('country-bars').innerHTML = d.by_country.map(x => `
+      <div class="bar-row">
+        <div class="name">${x.name}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(x.count/maxC*100).toFixed(1)}%"></div></div>
+        <div class="count">${x.count.toLocaleString()}</div>
+      </div>`).join('') || '<div class="loading">no data yet</div>';
+  }catch(e){
+    document.getElementById('proto-bars').innerHTML = '<div class="loading">failed to load</div>';
+  }
+}
+load();
+setInterval(load, 15000);
+</script>
+</body>
+</html>
