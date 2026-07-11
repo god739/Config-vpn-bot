@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Subscription — V2Ray Config Relay</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0E14; --panel:#121722; --panel2:#161D2B; --line:#232B3A;
+    --text:#E7ECF5; --muted:#7C8798; --dim:#4B5468;
+    --good:#3FD68C; --warn:#F5C451; --bad:#F2545B; --accent:#5B8DEF;
+    --mono:'IBM Plex Mono',monospace; --sans:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh;}
+  .wrap{max-width:640px; margin:0 auto; padding:56px 24px 80px;}
+  .badge{display:inline-flex; align-items:center; gap:8px; font-family:var(--mono); font-size:12px;
+         letter-spacing:.1em; text-transform:uppercase; color:var(--accent); border:1px solid var(--line);
+         padding:6px 12px; border-radius:99px; background:var(--panel);}
+  .vip{color:var(--warn); border-color:rgba(245,196,81,.3);}
+  h1{font-size:30px; font-weight:800; margin:20px 0 6px; letter-spacing:-0.01em;}
+  .sub{color:var(--muted); margin:0 0 32px; line-height:1.6; font-size:15px;}
+  .card{background:linear-gradient(180deg,var(--panel2),var(--panel)); border:1px solid var(--line);
+        border-radius:14px; padding:22px;}
+  .row{display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px;}
+  .row:last-child{border-bottom:none;}
+  .row .k{color:var(--muted);}
+  .row .v{font-family:var(--mono); color:var(--text);}
+  .linkbox{margin-top:22px; background:var(--panel); border:1px solid var(--line); border-radius:10px;
+           padding:14px 16px; display:flex; gap:10px; align-items:center;}
+  .linkbox input{flex:1; background:none; border:none; color:var(--text); font-family:var(--mono);
+                 font-size:12.5px; outline:none;}
+  .copybtn{background:var(--accent); color:#0B0E14; border:none; border-radius:8px; padding:9px 14px;
+           font-weight:700; font-size:12.5px; cursor:pointer; font-family:var(--sans); white-space:nowrap;}
+  .copybtn:active{transform:scale(0.97);}
+  .hint{color:var(--dim); font-size:12.5px; margin-top:14px; font-family:var(--mono); line-height:1.6;}
+  .apps{display:flex; gap:8px; margin-top:18px; flex-wrap:wrap;}
+  .apps span{font-size:11.5px; color:var(--muted); border:1px solid var(--line); border-radius:99px; padding:5px 11px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge {{ 'vip' if is_vip else '' }}">{{ 'VIP MEMBER' if is_vip else 'STANDARD ACCESS' }}</span>
+  <h1>Your subscription link</h1>
+  <p class="sub">Paste the link below into your VPN client as a subscription URL. It auto-updates as the pool is re-tested — you never need to copy configs by hand again.</p>
+
+  <div class="card">
+    <div class="row"><span class="k">User ID</span><span class="v">{{ user_id }}</span></div>
+    <div class="row"><span class="k">Protocol filter</span><span class="v">{{ protocol }}</span></div>
+    <div class="row"><span class="k">Country filter</span><span class="v">{{ country }}</span></div>
+    <div class="row"><span class="k">Total received (bot)</span><span class="v">{{ total }}</span></div>
+
+    <div class="linkbox">
+      <input id="link" readonly value="{{ request.url_root.rstrip('/') }}/sub/{{ user_id }}/{{ sig }}/raw">
+      <button class="copybtn" onclick="copyLink()">Copy</button>
+    </div>
+    <div class="hint">Filters match whatever protocol/country you last set inside the bot. Change them from the bot's menu — this link updates automatically, no need to re-copy.</div>
+  </div>
+
+  <div class="apps">
+    <span>v2rayNG</span><span>Streisand</span><span>Shadowrocket</span><span>NekoBox</span><span>Hiddify</span>
+  </div>
+</div>
+<script>
+function copyLink(){
+  const el = document.getElementById('link');
+  el.select(); el.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(el.value);
+  const btn = document.querySelector('.copybtn');
+  const orig = btn.textContent; btn.textContent = 'Copied ✓';
+  setTimeout(()=>btn.textContent = orig, 1500);
+}
+</script>
+</body>
+</html>
