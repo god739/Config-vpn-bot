@@ -1,0 +1,40 @@
+# ══════════════════════════════════════════════════════
+# Config Collector Bot v6.2 — requirements.txt
+# (بروزرسانی: رفع باگ‌ها + سازگاری کامل با Railway)
+# ══════════════════════════════════════════════════════
+
+# Core Telegram framework (job-queue / APScheduler)
+python-telegram-bot[job-queue]==22.6
+
+# Async HTTP client — fetch sources + GitHub API + ping tester HTTP checks
+aiohttp==3.13.5
+
+# Async SQLite driver
+aiosqlite==0.20.0
+
+# Retry logic with exponential back-off
+tenacity==9.0.0
+
+# SOCKS5 proxy connector for aiohttp — required by RealPingTester (v6.1) to
+# route the generate_204 test request through the local Xray SOCKS inbound.
+aiohttp-socks==0.11.0
+
+# پنل تحت وب (dashboard.py) — صفحه‌ی عمومی وضعیت، لینک‌های ساب اختصاصی
+# کاربران، و پنل کامل ادمین. اجرا در یک پروسه‌ی جدا کنار خودِ بات (نگاه
+# کنید به Procfile) و read-only از همان bot_database.db.
+flask==3.1.0
+
+# ── حذف‌شده‌ها ──────────────────────────────────────
+# geoip2     REMOVED in v5.0 — replaced by regex CountryDetector
+# aiodns     REMOVED in v2.4 — incompatible with aiohttp 3.13.5
+# pytz       REMOVED        — replaced by Python 3.9+ zoneinfo
+# hmac/hashlib/base64/socket/ipaddress/threading/zipfile — همه built-in هستند،
+# نیازی به نصب ندارند (از جمله موارد جدید اضافه‌شده برای رفع باگ SSRF و
+# race-condition پورت SOCKS در همین بروزرسانی).
+
+# ── نکته مهم دربارهٔ Real Ping Tester (v6.1) ──────────
+# باینری Xray-core یک پکیج پایپی نیست — پایتون نیست، یک فایل اجرایی Go است.
+# در اولین اجرای بات، اگر PING_TEST_ENABLED=true باشد، XrayManager آن را
+# خودکار از GitHub Releases (XTLS/Xray-core) برای Linux amd64/arm64 دانلود
+# و در XRAY_BIN_PATH (پیش‌فرض /tmp/xray_bin/xray) قرار می‌دهد. نیازی به
+# افزودن آن به requirements.txt نیست، اما نیاز به دسترسی شبکه به GitHub دارد.
